@@ -1,4 +1,5 @@
 JSON-log-formatter
 Django
+asgiref
 djangorestframework
 backports.zoneinfo;python_version<"3.9"

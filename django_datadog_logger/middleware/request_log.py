@@ -1,17 +1,33 @@
 import logging
 import time
 
+from asgiref.sync import iscoroutinefunction, markcoroutinefunction
 from rest_framework.utils.serializer_helpers import ReturnDict
 
 logger = logging.getLogger(__name__)
 
 
 class RequestLoggingMiddleware:
+    sync_capable = True
+    async_capable = True
+
     def __init__(self, get_response=None):
         self.get_response = get_response
+        self.async_mode = iscoroutinefunction(self.get_response)
+        if self.async_mode:
+            # Mark the class as async-capable, but do the actual switch
+            # inside __call__ to avoid swapping out dunder methods
+            markcoroutinefunction(self)
 
     def __call__(self, request):
+        if self.async_mode:
+            return self.__acall__(request)
         response = self.get_response(request)
+        self.log_response(request, response)
+        return response
+
+    async def __acall__(self, request):
+        response = await self.get_response(request)
         self.log_response(request, response)
         return response
 
